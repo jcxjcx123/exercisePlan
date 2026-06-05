@@ -536,7 +536,9 @@ const importData = () => {
     color: #fff;
     padding: 0 40px;
     height: 48px;
-    line-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     border-radius: 16px;
     font-weight: 600;
     &::after { border: none; }

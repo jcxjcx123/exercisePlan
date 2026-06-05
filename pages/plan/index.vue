@@ -565,11 +565,15 @@ const goToExerciseLibrary = () => {
   .save-btn {
     width: 100%;
     height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     background: linear-gradient(135deg, #007aff, #005bb7);
     color: #fff;
     border-radius: 16px;
     font-weight: 700;
     font-size: 16px;
+    line-height: 1;
     box-shadow: 0 8px 20px rgba(0, 122, 255, 0.2);
     &::after { border: none; }
   }
