@@ -29,6 +29,12 @@
 			"style": {
 				"navigationBarTitleText": "运动记录"
 			}
+		},
+		{
+			"path": "pages/my/index",
+			"style": {
+				"navigationBarTitleText": "个人中心"
+			}
 		}
 	],
 	"globalStyle": {
@@ -73,6 +79,12 @@
 				"text": "库",
 				"iconPath": "static/template.png",
 				"selectedIconPath": "static/template_s.png"
+			},
+			{
+				"pagePath": "pages/my/index",
+				"text": "我的",
+				"iconPath": "static/my.png",
+				"selectedIconPath": "static/my_s.png"
 			}
 		]
 	}

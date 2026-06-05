@@ -88,8 +88,40 @@ export const db = {
         const tableNameMatch = sql.match(/update (\w+)/i);
         if (tableNameMatch) {
           const tableName = tableNameMatch[1];
-          if (lowerSql.includes('set is_active = 0')) {
-            (data[tableName] || []).forEach(item => item.is_active = 0);
+          const setMatch = sql.match(/set\s+(.*?)(?:\s+where|$)/i);
+          if (setMatch) {
+            const setClauses = setMatch[1].split(',').map(s => s.trim());
+            const whereMatch = sql.match(/where\s+(.*)/i);
+            
+            let filteredItems = data[tableName] || [];
+            let paramIndex = 0;
+
+            if (whereMatch) {
+              const whereClause = whereMatch[1].toLowerCase();
+              if (whereClause.includes('id = ?')) {
+                // 如果 WHERE 中有 id=?，它通常是最后一个参数
+                // 我们需要先计算 SET 中的参数个数
+                const setParamCount = (setMatch[1].match(/\?/g) || []).length;
+                const idValue = values[setParamCount]; // 获取对应位置的 ID
+                filteredItems = filteredItems.filter(item => item.id === idValue);
+              } else if (whereClause.includes('is_active = 1')) {
+                filteredItems = filteredItems.filter(item => item.is_active === 1);
+              }
+            }
+
+            setClauses.forEach(clause => {
+              const [col, val] = clause.split('=').map(s => s.trim());
+              filteredItems.forEach(item => {
+                if (val === '?') {
+                  item[col] = values[paramIndex];
+                } else {
+                  const cleanVal = val.replace(/'/g, '');
+                  item[col] = isNaN(cleanVal) ? cleanVal : Number(cleanVal);
+                }
+              });
+              if (val === '?') paramIndex++;
+            });
+            console.log(`[H5 DB] Updated ${tableName}:`, filteredItems);
           }
         }
       }
@@ -137,6 +169,8 @@ export const db = {
       // 处理排序
       if (lowerSql.includes('order by date desc')) {
         res = [...res].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+      } else if (lowerSql.includes('order by record_date desc')) {
+        res = [...res].sort((a, b) => (b.record_date || '').localeCompare(a.record_date || ''));
       } else if (lowerSql.includes('order by day_index asc')) {
         res = [...res].sort((a, b) => (a.day_index || 0) - (b.day_index || 0));
       }
@@ -194,6 +228,31 @@ export const db = {
         group_id TEXT
       )`);
       await this.execute(`CREATE TABLE IF NOT EXISTS schedule_adjustments (id INTEGER PRIMARY KEY AUTOINCREMENT, adjust_date TEXT, type TEXT)`);
+      
+      // 用户数据表
+      await this.execute(`CREATE TABLE IF NOT EXISTS user_intake (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        tdee REAL,
+        goal TEXT,
+        muscle_calories REAL,
+        muscle_carb REAL,
+        muscle_protein REAL,
+        muscle_fat REAL,
+        fat_calories REAL,
+        fat_carb REAL,
+        fat_protein REAL,
+        fat_fat REAL
+      )`);
+      
+      await this.execute(`CREATE TABLE IF NOT EXISTS body_records (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        weight REAL,
+        chest REAL,
+        waist REAL,
+        thigh REAL,
+        arm REAL,
+        record_date TEXT
+      )`);
 
       console.log('Database initialized successfully (isApp: ' + isApp + ')');
     } catch (e) {
