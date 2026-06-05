@@ -58,8 +58,8 @@
                       <text>{{ action.note || '未填写内容' }}</text>
                     </view>
                     <view v-else class="action-data">
-                      <view class="data-pill">{{ action.sets }} 组</view>
                       <view class="data-pill">{{ action.reps }} 次</view>
+                      <view class="data-pill">{{ action.sets }} 组</view>
                       <view class="data-pill weight">{{ action.weight }} KG</view>
                     </view>
                   </view>
@@ -113,12 +113,12 @@
             <!-- 力量训练 UI -->
             <view v-else class="log-inputs">
               <view class="input-box">
-                <text class="label">实际组数</text>
-                <input type="number" v-model="action.sets" />
-              </view>
-              <view class="input-box">
                 <text class="label">实际次数</text>
                 <input type="number" v-model="action.reps" />
+              </view>
+              <view class="input-box">
+                <text class="label">实际组数</text>
+                <input type="number" v-model="action.sets" />
               </view>
               <view class="input-box weight">
                 <text class="label">重量 (KG)</text>

@@ -45,7 +45,7 @@
             <view v-for="actionId in selectedDayPlan.action_ids" :key="actionId" class="action-item">
               <view class="action-info">
                 <text class="name">{{ getActionName(actionId) }}</text>
-                <text class="target" v-if="getActionCategory(actionId) !== '有氧' && getActionCategory(actionId) !== '核心'">{{ selectedDayPlan.settings[actionId].sets }} 组 x {{ selectedDayPlan.settings[actionId].reps }} 次</text>
+                <text class="target" v-if="getActionCategory(actionId) !== '有氧' && getActionCategory(actionId) !== '核心'">{{ selectedDayPlan.settings[actionId].reps }} 次 x {{ selectedDayPlan.settings[actionId].sets }} 组</text>
                 <text class="target" v-else>{{ getActionCategory(actionId) }}训练</text>
               </view>
               <uni-icons type="circle" size="20" color="#eee"></uni-icons>

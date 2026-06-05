@@ -73,12 +73,12 @@
                 <text class="action-name">{{ getActionName(actionId) }}</text>
                 <view class="action-controls" v-if="getActionCategory(actionId) !== '有氧' && getActionCategory(actionId) !== '核心'">
                   <view class="input-wrap">
-                    <input type="number" v-model="day.settings[actionId].sets" />
-                    <text>组</text>
-                  </view>
-                  <view class="input-wrap">
                     <input type="number" v-model="day.settings[actionId].reps" />
                     <text>次</text>
+                  </view>
+                  <view class="input-wrap">
+                    <input type="number" v-model="day.settings[actionId].sets" />
+                    <text>组</text>
                   </view>
                 </view>
                 <view class="action-controls" v-else>

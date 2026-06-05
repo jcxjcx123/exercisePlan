@@ -55,7 +55,7 @@
                     <text class="group-tag">{{ getActionCategory(actionId) }}</text>
                     <text class="name">{{ getActionName(actionId) }}</text>
                   </view>
-                  <text class="target" v-if="getActionCategory(actionId) !== '有氧' && getActionCategory(actionId) !== '核心'">{{ todayPlan.settings[actionId].sets }} 组 x {{ todayPlan.settings[actionId].reps }} 次</text>
+                  <text class="target" v-if="getActionCategory(actionId) !== '有氧' && getActionCategory(actionId) !== '核心'">{{ todayPlan.settings[actionId].reps }} 次 x {{ todayPlan.settings[actionId].sets }} 组</text>
                   <text class="target" v-else>{{ getActionCategory(actionId) }}运动：记录时输入内容</text>
                 </view>
                 <uni-icons type="checkbox-filled" size="24" color="#eee"></uni-icons>
@@ -104,7 +104,7 @@
             <view class="log-card-header">
               <view class="header-left">
                 <text class="name">{{ action.name }}</text>
-                <text v-if="action.isPreset && action.category !== '有氧' && action.category !== '核心'" class="ref">建议: {{ action.refSets }}组 x {{ action.refReps }}次</text>
+                <text v-if="action.isPreset && action.category !== '有氧' && action.category !== '核心'" class="ref">建议: {{ action.refReps }}次 x {{ action.refSets }}组</text>
               </view>
               <view class="header-right" @click="removeLogAction(index)">
                 <uni-icons type="trash" size="20" color="#ff4d4f"></uni-icons>
@@ -115,20 +115,20 @@
             <view v-if="action.category === '有氧' || action.category === '核心'" class="cardio-input">
               <textarea 
                 v-model="action.note" 
-                :placeholder="'在此输入' + action.category + '内容（如：' + (action.category === '有氧' ? '跑步 30分钟 5KM' : '卷腹 3组 20次') + '）'" 
+                :placeholder="'在此输入' + action.category + '内容（如：' + (action.category === '有氧' ? '跑步 30分钟 5KM' : '卷腹 20次 3组') + '）'" 
                 auto-height
               ></textarea>
             </view>
             
             <!-- 力量训练 UI -->
-            <view v-else class="log-inputs">
-              <view class="input-box">
-                <text class="label">实际组数</text>
-                <input type="number" v-model="action.sets" />
-              </view>
+            <view class="log-inputs">
               <view class="input-box">
                 <text class="label">实际次数</text>
                 <input type="number" v-model="action.reps" />
+              </view>
+              <view class="input-box">
+                <text class="label">实际组数</text>
+                <input type="number" v-model="action.sets" />
               </view>
               <view class="input-box weight">
                 <text class="label">重量 (KG)</text>
