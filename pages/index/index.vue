@@ -121,7 +121,7 @@
             </view>
             
             <!-- 力量训练 UI -->
-            <view class="log-inputs">
+            <view v-else class="log-inputs">
               <view class="input-box">
                 <text class="label">实际次数</text>
                 <input type="number" v-model="action.reps" />
@@ -242,7 +242,7 @@
           </view>
           
           <view class="app-info">
-            <text>运动计划管理 v1.1.0</text>
+            <text>运动计划管理 v1.1.1</text>
           </view>
         </view>
       </view>

@@ -104,6 +104,7 @@
 	$uni-primary: #2979ff !default;
 	.uni-calendar-item__weeks-box {
 		flex: 1;
+		width: 100%;
 		/* #ifndef APP-NVUE */
 		display: flex;
 		/* #endif */
@@ -130,8 +131,8 @@
 		flex-direction: column;
 		justify-content: center;
 		align-items: center;
-		width: 100rpx;
-		height: 100rpx;
+		width: 90rpx;
+		height: 90rpx;
 	}
 
 	.uni-calendar-item__weeks-box-circle {

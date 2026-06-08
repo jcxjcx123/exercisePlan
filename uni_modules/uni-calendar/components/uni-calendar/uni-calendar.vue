@@ -513,14 +513,22 @@
 		display: flex;
 		/* #endif */
 		flex-direction: row;
+		width: 100%;
+		box-sizing: border-box;
 	}
 
 	.uni-calendar__weeks-item {
-		flex: 1;
+		width: 14.2857%;
+		box-sizing: border-box;
+		/* #ifndef APP-NVUE */
+		display: flex;
+		/* #endif */
+		flex-direction: column;
 	}
 
 	.uni-calendar__weeks-day {
-		flex: 1;
+		width: 14.2857%;
+		box-sizing: border-box;
 		/* #ifndef APP-NVUE */
 		display: flex;
 		/* #endif */
