@@ -69,12 +69,9 @@
             <uni-icons type="info" size="18" color="#666"></uni-icons>
             <text>休</text>
           </button>
-          <button v-if="!todayPlan.isRest" class="action-btn start" @click="showLogPopup">
-            <text>开始训练打卡</text>
+          <button class="action-btn start" @click="showLogPopup">
+            <text>{{ todayPlan.isRest ? '休息日加练打卡' : '开始训练打卡' }}</text>
             <uni-icons type="arrow-right" size="18" color="#fff"></uni-icons>
-          </button>
-          <button v-else class="action-btn full" @click="goToCalendar">
-            <text>查看训练日历</text>
           </button>
         </view>
       </view>
@@ -122,17 +119,34 @@
             
             <!-- 力量训练 UI -->
             <view v-else class="log-inputs">
-              <view class="input-box">
+              <view class="input-main-row">
+                <view class="input-box">
+                  <text class="label">实际组数</text>
+                  <input type="number" v-model="action.sets" @input="onSetsChange(action)" />
+                </view>
+                <view class="input-box weight">
+                  <text class="label">重量 (KG)</text>
+                  <input type="digit" v-model="action.weight" />
+                </view>
+                <view class="multi-toggle" @click="action.isMultiSet = !action.isMultiSet">
+                  <uni-icons :type="action.isMultiSet ? 'checkbox-filled' : 'checkbox'" size="20" :color="action.isMultiSet ? '#007aff' : '#ccc'"></uni-icons>
+                  <text :class="{ active: action.isMultiSet }">每组次数</text>
+                </view>
+              </view>
+
+              <view v-if="!action.isMultiSet" class="input-box single-reps">
                 <text class="label">实际次数</text>
                 <input type="number" v-model="action.reps" />
               </view>
-              <view class="input-box">
-                <text class="label">实际组数</text>
-                <input type="number" v-model="action.sets" />
-              </view>
-              <view class="input-box weight">
-                <text class="label">重量 (KG)</text>
-                <input type="digit" v-model="action.weight" />
+              
+              <view v-else class="multi-reps-container">
+                <text class="label">每组次数录入</text>
+                <view class="multi-reps-grid">
+                  <view v-for="sIndex in Number(action.sets)" :key="sIndex" class="multi-reps-item">
+                    <text class="set-label">第{{ sIndex }}组</text>
+                    <input type="number" v-model="action.multiReps[sIndex-1]" class="multi-input" />
+                  </view>
+                </view>
               </view>
             </view>
           </view>
@@ -242,7 +256,7 @@
           </view>
           
           <view class="app-info">
-            <text>运动计划管理 v1.1.1</text>
+            <text>运动计划管理 v{{ version }}</text>
           </view>
         </view>
       </view>
@@ -252,6 +266,7 @@
 
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue';
+import pkg from '@/package.json';
 import { usePlanStore } from '@/stores/plan.js';
 import { useExerciseStore } from '@/stores/exercise.js';
 import { useLogStore } from '@/stores/log.js';
@@ -260,6 +275,8 @@ import { db } from '@/utils/db.js';
 const planStore = usePlanStore();
 const exerciseStore = useExerciseStore();
 const logStore = useLogStore();
+
+const version = pkg.version;
 
 const todayStr = new Date().toISOString().split('T')[0];
 const todayPlan = ref(null);
@@ -360,7 +377,7 @@ const showLogPopup = async () => {
   logDate.value = todayStr;
   const existingLogs = await logStore.fetchLogsByDate(logDate.value);
   
-  if (!todayPlan.value) {
+  if (!todayPlan.value || todayPlan.value.isRest) {
     logActions.value = [];
   } else {
     const actions = [];
@@ -381,7 +398,9 @@ const showLogPopup = async () => {
         refReps: todayPlan.value.settings[id]?.reps,
         weight: lastWeight || 0,
         note: todayPlan.value.settings[id]?.note || '',
-        isPreset: true
+        isPreset: true,
+        isMultiSet: false,
+        multiReps: Array(todayPlan.value.settings[id]?.sets || 4).fill(todayPlan.value.settings[id]?.reps || 12)
       });
     }
     logActions.value = actions;
@@ -423,7 +442,9 @@ watch(logDate, async (newDate) => {
       refReps: planForDate.settings[id]?.reps,
       weight: lastWeight || 0,
       note: planForDate.settings[id]?.note || '',
-      isPreset: true
+      isPreset: true,
+      isMultiSet: false,
+      multiReps: Array(planForDate.settings[id]?.sets || 4).fill(planForDate.settings[id]?.reps || 12)
     });
   }
   
@@ -436,6 +457,20 @@ watch(logDate, async (newDate) => {
 
 const removeLogAction = (index) => {
   logActions.value.splice(index, 1);
+};
+
+const onSetsChange = (action) => {
+  const sets = parseInt(action.sets) || 0;
+  if (sets > action.multiReps.length) {
+    // 补齐
+    const lastVal = action.multiReps[action.multiReps.length - 1] || action.reps || 12;
+    for (let i = action.multiReps.length; i < sets; i++) {
+      action.multiReps.push(lastVal);
+    }
+  } else if (sets < action.multiReps.length) {
+    // 裁剪
+    action.multiReps = action.multiReps.slice(0, sets);
+  }
 };
 
 const showActionPicker = () => {
@@ -453,7 +488,9 @@ const addExtraAction = async (action, shouldClosePopup = true) => {
     reps: 12,
     weight: lastWeight || 0,
     note: '',
-    isPreset: false
+    isPreset: false,
+    isMultiSet: false,
+    multiReps: Array(4).fill(12)
   });
   if (shouldClosePopup) {
     actionPopup.value.close();
@@ -489,7 +526,19 @@ const submitLog = async () => {
       if (!confirmRes) return;
     }
 
-    await logStore.saveWorkout(logDate.value, logActions.value);
+    const actionsToSave = logActions.value.map(action => {
+      const data = { ...action };
+      if (action.isMultiSet && action.multiReps && action.multiReps.length > 0) {
+        data.reps_detail = action.multiReps.join(',');
+        // reps 存储平均值或第一组，这里存储第一组以保持兼容
+        data.reps = action.multiReps[0] || action.reps;
+      } else {
+        data.reps_detail = '';
+      }
+      return data;
+    });
+
+    await logStore.saveWorkout(logDate.value, actionsToSave);
     logPopup.value.close();
     uni.showToast({ title: '训练记录已保存' });
   } catch (e) {
@@ -905,12 +954,19 @@ const importData = () => {
     
     .log-inputs {
       display: flex;
+      flex-direction: column;
       gap: 12px;
       
+      .input-main-row {
+        display: flex;
+        gap: 10px;
+        align-items: flex-end;
+      }
+
       .input-box {
         flex: 1;
         background-color: #fff;
-        padding: 12px;
+        padding: 10px 12px;
         border-radius: 14px;
         
         .label {
@@ -930,9 +986,79 @@ const importData = () => {
         }
         
         &.weight {
-          flex: 1.4;
+          flex: 1.2;
           background-color: #eef6ff;
           input { color: #007aff; }
+        }
+
+        &.single-reps {
+          background-color: #f0fdf4;
+          input { color: #16a34a; }
+        }
+      }
+
+      .multi-toggle {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 10px;
+        background-color: #fff;
+        border-radius: 14px;
+        min-width: 60px;
+        height: 44px;
+        box-sizing: border-box;
+        
+        text {
+          font-size: 10px;
+          color: #999;
+          font-weight: 700;
+          margin-top: 2px;
+          &.active { color: #007aff; }
+        }
+      }
+
+      .multi-reps-container {
+        background-color: #fff;
+        padding: 16px;
+        border-radius: 16px;
+        
+        .label {
+          font-size: 12px;
+          font-weight: 700;
+          color: #666;
+          margin-bottom: 12px;
+          display: block;
+        }
+        
+        .multi-reps-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 10px;
+        }
+        
+        .multi-reps-item {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 4px;
+          
+          .set-label {
+            font-size: 10px;
+            color: #999;
+            font-weight: 600;
+          }
+          
+          .multi-input {
+            width: 100%;
+            height: 36px;
+            background-color: #f8f9fb;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 16px;
+            font-weight: 700;
+            color: #333;
+          }
         }
       }
     }

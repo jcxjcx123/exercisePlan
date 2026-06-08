@@ -225,8 +225,14 @@ export const db = {
         reps INTEGER, 
         weight REAL, 
         note TEXT,
-        group_id TEXT
+        group_id TEXT,
+        reps_detail TEXT
       )`);
+      try {
+        await this.execute(`ALTER TABLE workout_logs ADD COLUMN reps_detail TEXT`);
+      } catch (e) {
+        // 已经存在则忽略
+      }
       await this.execute(`CREATE TABLE IF NOT EXISTS schedule_adjustments (id INTEGER PRIMARY KEY AUTOINCREMENT, adjust_date TEXT, type TEXT)`);
       
       // 用户数据表
@@ -261,7 +267,7 @@ export const db = {
   },
 
   async exportData() {
-    const tables = ['exercise_actions', 'plan_configs', 'plan_details', 'workout_logs', 'schedule_adjustments'];
+    const tables = ['exercise_actions', 'plan_configs', 'plan_details', 'schedule_adjustments', 'user_intake', 'body_records'];
     const data = {};
     for (const table of tables) {
       data[table] = await this.select(`SELECT * FROM ${table}`);
@@ -271,7 +277,7 @@ export const db = {
 
   async importData(jsonStr) {
     const data = JSON.parse(jsonStr);
-    const tables = ['exercise_actions', 'plan_configs', 'plan_details', 'workout_logs', 'schedule_adjustments'];
+    const tables = ['exercise_actions', 'plan_configs', 'plan_details', 'schedule_adjustments', 'user_intake', 'body_records'];
     for (const table of tables) {
       await this.execute(`DELETE FROM ${table}`);
       const rows = data[table] || [];

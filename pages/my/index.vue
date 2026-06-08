@@ -106,7 +106,7 @@
         <scroll-view scroll-y="true" class="form-body">
           <uni-forms :modelValue="intakeForm" label-position="top" label-width="200">
             <uni-forms-item label="TDEE (总每日能量消耗)" name="tdee">
-              <uni-easyinput type="digit" v-model="intakeForm.tdee" placeholder="请输入 TDEE" />
+              <uni-easyinput type="digit" v-model="intakeForm.tdee" placeholder="请输入 TDEE" :focus="focusField === 'tdee'" @clear="setFocus('tdee')" />
             </uni-forms-item>
             
             <uni-forms-item label="当前阶段" name="goal">
@@ -115,33 +115,33 @@
 
             <view class="form-divider">增肌期设定</view>
             <uni-forms-item label="每日热量 (kcal)" name="muscle_calories">
-              <uni-easyinput type="digit" v-model="intakeForm.muscle_calories" placeholder="增肌期热量" />
+              <uni-easyinput type="digit" v-model="intakeForm.muscle_calories" placeholder="增肌期热量" :focus="focusField === 'muscle_calories'" @clear="setFocus('muscle_calories')" />
             </uni-forms-item>
             <view class="macros-input-row">
               <uni-forms-item label="碳水 (g)" class="macro-input">
-                <uni-easyinput type="digit" v-model="intakeForm.muscle_carb" />
+                <uni-easyinput type="digit" v-model="intakeForm.muscle_carb" :focus="focusField === 'muscle_carb'" @clear="setFocus('muscle_carb')" />
               </uni-forms-item>
               <uni-forms-item label="蛋白 (g)" class="macro-input">
-                <uni-easyinput type="digit" v-model="intakeForm.muscle_protein" />
+                <uni-easyinput type="digit" v-model="intakeForm.muscle_protein" :focus="focusField === 'muscle_protein'" @clear="setFocus('muscle_protein')" />
               </uni-forms-item>
               <uni-forms-item label="脂肪 (g)" class="macro-input">
-                <uni-easyinput type="digit" v-model="intakeForm.muscle_fat" />
+                <uni-easyinput type="digit" v-model="intakeForm.muscle_fat" :focus="focusField === 'muscle_fat'" @clear="setFocus('muscle_fat')" />
               </uni-forms-item>
             </view>
 
             <view class="form-divider">减脂期设定</view>
             <uni-forms-item label="每日热量 (kcal)" name="fat_calories">
-              <uni-easyinput type="digit" v-model="intakeForm.fat_calories" placeholder="减脂期热量" />
+              <uni-easyinput type="digit" v-model="intakeForm.fat_calories" placeholder="减脂期热量" :focus="focusField === 'fat_calories'" @clear="setFocus('fat_calories')" />
             </uni-forms-item>
             <view class="macros-input-row">
               <uni-forms-item label="碳水 (g)" class="macro-input">
-                <uni-easyinput type="digit" v-model="intakeForm.fat_carb" />
+                <uni-easyinput type="digit" v-model="intakeForm.fat_carb" :focus="focusField === 'fat_carb'" @clear="setFocus('fat_carb')" />
               </uni-forms-item>
               <uni-forms-item label="蛋白 (g)" class="macro-input">
-                <uni-easyinput type="digit" v-model="intakeForm.fat_protein" />
+                <uni-easyinput type="digit" v-model="intakeForm.fat_protein" :focus="focusField === 'fat_protein'" @clear="setFocus('fat_protein')" />
               </uni-forms-item>
               <uni-forms-item label="脂肪 (g)" class="macro-input">
-                <uni-easyinput type="digit" v-model="intakeForm.fat_fat" />
+                <uni-easyinput type="digit" v-model="intakeForm.fat_fat" :focus="focusField === 'fat_fat'" @clear="setFocus('fat_fat')" />
               </uni-forms-item>
             </view>
           </uni-forms>
@@ -167,20 +167,20 @@
               <uni-datetime-picker type="date" v-model="bodyForm.record_date" :clear-icon="false" />
             </uni-forms-item>
             <uni-forms-item label="体重 (KG)" name="weight">
-              <uni-easyinput type="digit" v-model="bodyForm.weight" />
+              <uni-easyinput type="digit" v-model="bodyForm.weight" :focus="focusField === 'weight'" @clear="setFocus('weight')" />
             </uni-forms-item>
             <view class="form-grid">
               <uni-forms-item label="胸围 (cm)" name="chest">
-                <uni-easyinput type="digit" v-model="bodyForm.chest" />
+                <uni-easyinput type="digit" v-model="bodyForm.chest" :focus="focusField === 'chest'" @clear="setFocus('chest')" />
               </uni-forms-item>
               <uni-forms-item label="腰围 (cm)" name="waist">
-                <uni-easyinput type="digit" v-model="bodyForm.waist" />
+                <uni-easyinput type="digit" v-model="bodyForm.waist" :focus="focusField === 'waist'" @clear="setFocus('waist')" />
               </uni-forms-item>
               <uni-forms-item label="大腿围 (cm)" name="thigh">
-                <uni-easyinput type="digit" v-model="bodyForm.thigh" />
+                <uni-easyinput type="digit" v-model="bodyForm.thigh" :focus="focusField === 'thigh'" @clear="setFocus('thigh')" />
               </uni-forms-item>
               <uni-forms-item label="臂围 (cm)" name="arm">
-                <uni-easyinput type="digit" v-model="bodyForm.arm" />
+                <uni-easyinput type="digit" v-model="bodyForm.arm" :focus="focusField === 'arm'" @clear="setFocus('arm')" />
               </uni-forms-item>
             </view>
           </uni-forms>
@@ -236,16 +236,16 @@ const bodyPopup = ref(null);
 const historyPopup = ref(null);
 
 const intakeForm = reactive({
-  tdee: 0,
+  tdee: '',
   goal: 'muscle',
-  muscle_calories: 0,
-  muscle_carb: 0,
-  muscle_protein: 0,
-  muscle_fat: 0,
-  fat_calories: 0,
-  fat_carb: 0,
-  fat_protein: 0,
-  fat_fat: 0
+  muscle_calories: '',
+  muscle_carb: '',
+  muscle_protein: '',
+  muscle_fat: '',
+  fat_calories: '',
+  fat_carb: '',
+  fat_protein: '',
+  fat_fat: ''
 });
 
 const bodyForm = reactive({
@@ -256,6 +256,15 @@ const bodyForm = reactive({
   arm: '',
   record_date: new Date().toISOString().split('T')[0]
 });
+
+// 聚焦控制
+const focusField = ref('');
+const setFocus = (field) => {
+  focusField.value = '';
+  setTimeout(() => {
+    focusField.value = field;
+  }, 50);
+};
 
 const bodyDataItems = [
   { label: '体重', key: 'weight', unit: 'KG' },
@@ -310,22 +319,37 @@ const getTrend = (key) => {
 };
 
 const showIntakePopup = () => {
-  Object.assign(intakeForm, userStore.intake);
+  const data = { ...userStore.intake };
+  // 将 0 转换为 '' 以便用户直接录入
+  Object.keys(data).forEach(key => {
+    if (typeof data[key] === 'number' && data[key] === 0) {
+      data[key] = '';
+    }
+  });
+  Object.assign(intakeForm, data);
   intakePopup.value.open();
 };
 
 const saveIntake = async () => {
-  await userStore.saveIntake({ ...intakeForm });
+  const dataToSave = { ...intakeForm };
+  // 保存时将空字符串转回 0
+  Object.keys(dataToSave).forEach(key => {
+    if (key !== 'goal' && dataToSave[key] === '') {
+      dataToSave[key] = 0;
+    }
+  });
+  await userStore.saveIntake(dataToSave);
   intakePopup.value.close();
   uni.showToast({ title: '保存成功', icon: 'success' });
 };
 
 const showBodyPopup = () => {
-  bodyForm.weight = latestRecord.value.weight || '';
-  bodyForm.chest = latestRecord.value.chest || '';
-  bodyForm.waist = latestRecord.value.waist || '';
-  bodyForm.thigh = latestRecord.value.thigh || '';
-  bodyForm.arm = latestRecord.value.arm || '';
+  const fields = ['weight', 'chest', 'waist', 'thigh', 'arm'];
+  fields.forEach(field => {
+    bodyForm[field] = latestRecord.value[field] || '';
+    // 如果是 0 也转为空字符串
+    if (bodyForm[field] === 0) bodyForm[field] = '';
+  });
   bodyForm.record_date = new Date().toISOString().split('T')[0];
   bodyPopup.value.open();
 };

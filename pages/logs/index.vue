@@ -58,7 +58,10 @@
                       <text>{{ action.note || '未填写内容' }}</text>
                     </view>
                     <view v-else class="action-data">
-                      <view class="data-pill">{{ action.reps }} 次</view>
+                      <view class="data-pill reps-pill">
+                        <text class="reps-text">{{ action.reps_detail || action.reps }}</text>
+                        <text class="unit">次</text>
+                      </view>
                       <view class="data-pill">{{ action.sets }} 组</view>
                       <view class="data-pill weight">{{ action.weight }} KG</view>
                     </view>
@@ -112,17 +115,34 @@
             
             <!-- 力量训练 UI -->
             <view v-else class="log-inputs">
-              <view class="input-box">
+              <view class="input-main-row">
+                <view class="input-box">
+                  <text class="label">实际组数</text>
+                  <input type="number" v-model="action.sets" @input="onSetsChange(action)" />
+                </view>
+                <view class="input-box weight">
+                  <text class="label">重量 (KG)</text>
+                  <input type="digit" v-model="action.weight" />
+                </view>
+                <view class="multi-toggle" @click="action.isMultiSet = !action.isMultiSet">
+                  <uni-icons :type="action.isMultiSet ? 'checkbox-filled' : 'checkbox'" size="20" :color="action.isMultiSet ? '#007aff' : '#ccc'"></uni-icons>
+                  <text :class="{ active: action.isMultiSet }">每组次数</text>
+                </view>
+              </view>
+
+              <view v-if="!action.isMultiSet" class="input-box single-reps">
                 <text class="label">实际次数</text>
                 <input type="number" v-model="action.reps" />
               </view>
-              <view class="input-box">
-                <text class="label">实际组数</text>
-                <input type="number" v-model="action.sets" />
-              </view>
-              <view class="input-box weight">
-                <text class="label">重量 (KG)</text>
-                <input type="digit" v-model="action.weight" />
+              
+              <view v-else class="multi-reps-container">
+                <text class="label">每组次数录入</text>
+                <view class="multi-reps-grid">
+                  <view v-for="sIndex in Number(action.sets)" :key="sIndex" class="multi-reps-item">
+                    <text class="set-label">第{{ sIndex }}组</text>
+                    <input type="number" v-model="action.multiReps[sIndex-1]" class="multi-input" />
+                  </view>
+                </view>
               </view>
             </view>
           </view>
@@ -335,6 +355,9 @@ const showEditPopup = (group) => {
   // 展平所有分类下的动作
   group.categoryList.forEach(cat => {
     cat.actions.forEach(action => {
+      const isMultiSet = !!action.reps_detail;
+      const multiReps = isMultiSet ? action.reps_detail.split(',').map(Number) : Array(action.sets || 4).fill(action.reps || 12);
+      
       logActions.value.push({
         id: action.action_id,
         name: action.action_name,
@@ -343,12 +366,26 @@ const showEditPopup = (group) => {
         reps: action.reps,
         weight: action.weight,
         note: action.note || '',
-        isPreset: false // 编辑时都视为非预设
+        isPreset: false, // 编辑时都视为非预设
+        isMultiSet: isMultiSet,
+        multiReps: multiReps
       });
     });
   });
   
   logPopup.value.open();
+};
+
+const onSetsChange = (action) => {
+  const sets = parseInt(action.sets) || 0;
+  if (sets > action.multiReps.length) {
+    const lastVal = action.multiReps[action.multiReps.length - 1] || action.reps || 12;
+    for (let i = action.multiReps.length; i < sets; i++) {
+      action.multiReps.push(lastVal);
+    }
+  } else if (sets < action.multiReps.length) {
+    action.multiReps = action.multiReps.slice(0, sets);
+  }
 };
 
 const removeLogAction = (index) => {
@@ -369,7 +406,9 @@ const addExtraAction = async (action, shouldClosePopup = true) => {
     reps: 12,
     weight: lastWeight || 0,
     note: '',
-    isPreset: false
+    isPreset: false,
+    isMultiSet: false,
+    multiReps: Array(4).fill(12)
   });
   if (shouldClosePopup) {
     actionPopup.value.close();
@@ -400,7 +439,17 @@ const submitLog = async () => {
   }
 
   try {
-    await logStore.updateWorkoutByDate(logDate.value, logActions.value);
+    const actionsToSave = logActions.value.map(action => {
+      const data = { ...action };
+      if (action.isMultiSet && action.multiReps && action.multiReps.length > 0) {
+        data.reps_detail = action.multiReps.join(',');
+        data.reps = action.multiReps[0] || action.reps;
+      } else {
+        data.reps_detail = '';
+      }
+      return data;
+    });
+    await logStore.updateWorkoutByDate(logDate.value, actionsToSave);
     logPopup.value.close();
     uni.showToast({ title: '记录已更新' });
     fetchLogs(true);
@@ -592,6 +641,8 @@ const submitLog = async () => {
       .action-data {
         display: flex;
         gap: 6px;
+        align-items: center;
+        flex-wrap: wrap;
         
         .data-pill {
           font-size: 10px;
@@ -600,7 +651,24 @@ const submitLog = async () => {
           background-color: #fff;
           padding: 2px 8px;
           border-radius: 6px;
+          white-space: nowrap;
           
+          &.reps-pill {
+            display: flex;
+            align-items: baseline;
+            gap: 2px;
+            max-width: 140px;
+            overflow: hidden;
+            
+            .reps-text {
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
+            .unit {
+              flex-shrink: 0;
+            }
+          }
+
           &.weight {
             background-color: #eef6ff;
             color: #007aff;
@@ -715,12 +783,19 @@ const submitLog = async () => {
     
     .log-inputs {
       display: flex;
+      flex-direction: column;
       gap: 12px;
       
+      .input-main-row {
+        display: flex;
+        gap: 10px;
+        align-items: flex-end;
+      }
+
       .input-box {
         flex: 1;
         background-color: #fff;
-        padding: 12px;
+        padding: 10px 12px;
         border-radius: 14px;
         
         .label {
@@ -740,9 +815,79 @@ const submitLog = async () => {
         }
         
         &.weight {
-          flex: 1.4;
+          flex: 1.2;
           background-color: #eef6ff;
           input { color: #007aff; }
+        }
+
+        &.single-reps {
+          background-color: #f0fdf4;
+          input { color: #16a34a; }
+        }
+      }
+
+      .multi-toggle {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 8px 10px;
+        background-color: #fff;
+        border-radius: 14px;
+        min-width: 60px;
+        height: 44px;
+        box-sizing: border-box;
+        
+        text {
+          font-size: 10px;
+          color: #999;
+          font-weight: 700;
+          margin-top: 2px;
+          &.active { color: #007aff; }
+        }
+      }
+
+      .multi-reps-container {
+        background-color: #fff;
+        padding: 16px;
+        border-radius: 16px;
+        
+        .label {
+          font-size: 12px;
+          font-weight: 700;
+          color: #666;
+          margin-bottom: 12px;
+          display: block;
+        }
+        
+        .multi-reps-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 10px;
+        }
+        
+        .multi-reps-item {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 4px;
+          
+          .set-label {
+            font-size: 10px;
+            color: #999;
+            font-weight: 600;
+          }
+          
+          .multi-input {
+            width: 100%;
+            height: 36px;
+            background-color: #f8f9fb;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 16px;
+            font-weight: 700;
+            color: #333;
+          }
         }
       }
     }
