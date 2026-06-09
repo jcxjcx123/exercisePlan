@@ -21,7 +21,7 @@
           </view>
         </uni-datetime-picker>
         <view class="action-btn chart" @click="goToStatistics">
-          <image src="/static/统计.svg" style="width: 20px; height: 20px;"></image>
+          <image src="/static/statistics.svg" style="width: 20px; height: 20px;"></image>
         </view>
       </view>
     </view>
