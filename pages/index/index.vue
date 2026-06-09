@@ -8,6 +8,9 @@
         <text class="greeting-text">{{ greeting }}</text>
       </view>
       <view class="header-right">
+        <view class="timer-btn" @click="goToTimer">
+          <uni-icons type="notification" size="24" color="#fff"></uni-icons>
+        </view>
         <view class="avatar" @click="showProfilePopup">
           <uni-icons type="person-filled" size="24" color="#fff"></uni-icons>
         </view>
@@ -409,6 +412,10 @@ const goToCalendar = () => {
   uni.switchTab({ url: '/pages/calendar/index' });
 };
 
+const goToTimer = () => {
+  uni.navigateTo({ url: '/pages/timer/index' });
+};
+
 const confirmRest = () => {
   uni.showModal({
     title: '调整休息',
@@ -692,7 +699,13 @@ const importData = () => {
     margin-top: 4px;
   }
 
-  .avatar {
+  .header-right {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .avatar, .timer-btn {
     width: 44px;
     height: 44px;
     background: linear-gradient(135deg, #007aff, #005bb7);
@@ -701,6 +714,11 @@ const importData = () => {
     justify-content: center;
     align-items: center;
     box-shadow: 0 4px 12px rgba(0, 122, 255, 0.2);
+  }
+
+  .timer-btn {
+    background: linear-gradient(135deg, #4cd964, #28a745);
+    box-shadow: 0 4px 12px rgba(76, 217, 100, 0.2);
   }
 }
 

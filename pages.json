@@ -7,6 +7,12 @@
 			}
 		},
 		{
+			"path": "pages/timer/index",
+			"style": {
+				"navigationBarTitleText": "休息计时"
+			}
+		},
+		{
 			"path": "pages/exercise/index",
 			"style": {
 				"navigationBarTitleText": "动作库"
