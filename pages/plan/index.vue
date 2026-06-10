@@ -69,6 +69,14 @@
           
           <view v-else class="action-list">
             <view v-for="(actionId, aIndex) in day.action_ids" :key="aIndex" class="action-item">
+              <view class="sort-controls">
+                <view class="sort-btn" :class="{ disabled: aIndex === 0 }" @click="moveAction(index, aIndex, -1)">
+                  <uni-icons type="arrow-up" size="14" :color="aIndex === 0 ? '#ccc' : '#666'"></uni-icons>
+                </view>
+                <view class="sort-btn" :class="{ disabled: aIndex === day.action_ids.length - 1 }" @click="moveAction(index, aIndex, 1)">
+                  <uni-icons type="arrow-down" size="14" :color="aIndex === day.action_ids.length - 1 ? '#ccc' : '#666'"></uni-icons>
+                </view>
+              </view>
               <view class="action-main">
                 <text class="action-name">{{ getActionName(actionId) }}</text>
                 <view class="action-controls" v-if="getActionCategory(actionId) !== '有氧' && getActionCategory(actionId) !== '核心'">
@@ -283,6 +291,18 @@ const removeAction = (dayIndex, actionIndex) => {
   delete day.settings[actionId];
 };
 
+const moveAction = (dayIndex, actionIndex, direction) => {
+  const day = dayDetails.value[dayIndex];
+  const newIndex = actionIndex + direction;
+  
+  if (newIndex < 0 || newIndex >= day.action_ids.length) return;
+  
+  // 交换位置
+  const temp = day.action_ids[actionIndex];
+  day.action_ids[actionIndex] = day.action_ids[newIndex];
+  day.action_ids[newIndex] = temp;
+};
+
 const savePlan = async () => {
   for (const day of dayDetails.value) {
     if (day.action_ids.length === 0) {
@@ -435,6 +455,7 @@ const goToExerciseLibrary = () => {
 
 .days-section {
   margin-top: 32px;
+  padding-bottom: 120px;
   
   .section-header {
     margin-bottom: 16px;
@@ -510,6 +531,29 @@ const goToExerciseLibrary = () => {
     flex: 1;
   }
   
+  .sort-controls {
+    display: flex;
+    flex-direction: column;
+    margin-right: 12px;
+    gap: 4px;
+    
+    .sort-btn {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #fff;
+      border-radius: 6px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      
+      &.disabled {
+        background-color: #f0f0f0;
+        box-shadow: none;
+      }
+    }
+  }
+  
   .action-name {
     font-size: 15px;
     font-weight: 700;
@@ -580,6 +624,7 @@ const goToExerciseLibrary = () => {
   display: flex;
   flex-direction: column;
   align-items: center;
+  z-index: 99;
   
   .save-btn {
     width: 100%;

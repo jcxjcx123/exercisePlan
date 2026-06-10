@@ -89,9 +89,11 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { useExerciseStore } from '@/stores/exercise.js';
+import { usePlanStore } from '@/stores/plan.js';
 import { db } from '@/utils/db.js';
 
 const exerciseStore = useExerciseStore();
+const planStore = usePlanStore();
 const actions = computed(() => exerciseStore.actions);
 
 const addPopup = ref(null);
@@ -120,6 +122,7 @@ const filteredActions = computed(() => {
 
 onMounted(() => {
   exerciseStore.fetchActions();
+  planStore.fetchActivePlan();
 });
 
 const showAddDialog = () => {
@@ -148,9 +151,17 @@ const onAddConfirm = async () => {
 };
 
 const confirmDelete = (action) => {
+  // 检查动作是否在当前计划中
+  const isInPlan = planStore.planDetails.some(detail => detail.action_ids.includes(action.id));
+  
+  let content = `确定要删除“${action.name}”吗？此操作不可撤销。`;
+  if (isInPlan) {
+    content = `“${action.name}”正在您的训练计划中使用。删除后，计划中的该动作将显示为“未知动作”。确定要删除吗？`;
+  }
+
   uni.showModal({
     title: '删除确认',
-    content: `确定要删除“${action.name}”吗？此操作不可撤销。`,
+    content: content,
     confirmColor: '#ff4d4f',
     success: async (res) => {
       if (res.confirm) {
