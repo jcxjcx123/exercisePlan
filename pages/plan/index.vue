@@ -36,9 +36,9 @@
               <view class="step-btn" @click="baseFormData.rest_days = Math.min(7, baseFormData.rest_days + 1)">+</view>
             </view>
           </view>
-          <view class="config-item half">
+          <view style="z-index: 100;" class="config-item half">
             <text class="label">开始日期</text>
-            <uni-datetime-picker type="date" v-model="baseFormData.start_date" :border="false">
+            <uni-datetime-picker  type="date" v-model="baseFormData.start_date" :border="false">
               <view class="date-display">
                 <text>{{ baseFormData.start_date }}</text>
                 <uni-icons type="calendar" size="16" color="#007aff"></uni-icons>
