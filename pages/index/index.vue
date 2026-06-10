@@ -9,9 +9,6 @@
           <view class="timer-btn" @click="goToTimer">
             <uni-icons type="notification" size="20" color="#fff"></uni-icons>
           </view>
-          <view class="avatar" @click="showProfilePopup">
-            <uni-icons type="person-filled" size="20" color="#fff"></uni-icons>
-          </view>
         </view>
       </view>
       <text class="greeting-text">{{ greeting }}</text>
@@ -220,50 +217,6 @@
         </scroll-view>
       </view>
     </uni-popup>
-
-    <!-- 个人中心/数据管理弹窗 -->
-    <uni-popup ref="profilePopup" type="bottom">
-      <view class="profile-drawer">
-        <view class="drawer-header">
-          <view class="drag-handle"></view>
-          <view class="user-info">
-            <view class="large-avatar">
-              <uni-icons type="person-filled" size="40" color="#fff"></uni-icons>
-            </view>
-            <view class="info-content">
-              <text class="user-name">健身达人</text>
-              <text class="user-sub">记录进步，成就更好的自己</text>
-            </view>
-          </view>
-        </view>
-        
-        <view class="drawer-body">
-          <view class="menu-section">
-            <text class="section-title">数据管理</text>
-            <view class="menu-grid">
-              <view class="menu-item" @click="exportData">
-                <view class="icon-wrap export">
-                  <uni-icons type="download-filled" size="24" color="#007aff"></uni-icons>
-                </view>
-                <text class="menu-label">导出备份</text>
-                <text class="menu-sub">导出全部数据</text>
-              </view>
-              <view class="menu-item" @click="importData">
-                <view class="icon-wrap import">
-                  <uni-icons type="upload-filled" size="24" color="#ff9500"></uni-icons>
-                </view>
-                <text class="menu-label">导入数据</text>
-                <text class="menu-sub">还原备份记录</text>
-              </view>
-            </view>
-          </view>
-          
-          <view class="app-info">
-            <text>运动计划管理 v{{ version }}</text>
-          </view>
-        </view>
-      </view>
-    </uni-popup>
   </view>
 </template>
 
@@ -274,11 +227,12 @@ import pkg from '@/package.json';
 import { usePlanStore } from '@/stores/plan.js';
 import { useExerciseStore } from '@/stores/exercise.js';
 import { useLogStore } from '@/stores/log.js';
-import { db } from '@/utils/db.js';
+import { useUserStore } from '@/stores/user.js';
 
 const planStore = usePlanStore();
 const exerciseStore = useExerciseStore();
 const logStore = useLogStore();
+const userStore = useUserStore();
 
 const version = pkg.version;
 
@@ -287,7 +241,6 @@ const todayPlan = ref(null);
 const todayLogs = ref([]);
 const logPopup = ref(null);
 const actionPopup = ref(null);
-const profilePopup = ref(null);
 const logActions = ref([]);
 const logDate = ref(todayStr);
 const scrollTop = ref(0);
@@ -375,9 +328,6 @@ onHide(() => {
   }
   if (actionPopup.value) {
     actionPopup.value.close();
-  }
-  if (profilePopup.value) {
-    profilePopup.value.close();
   }
 });
 
@@ -617,55 +567,6 @@ const submitLog = async () => {
     uni.showToast({ title: '保存失败', icon: 'none' });
   }
 };
-
-const showProfilePopup = () => {
-  profilePopup.value.open();
-};
-
-const exportData = async () => {
-  try {
-    const jsonStr = await db.exportData();
-    uni.setClipboardData({
-      data: jsonStr,
-      success: () => {
-        uni.showModal({
-          title: '导出成功',
-          content: '数据已复制到剪贴板，请妥善保存。',
-          showCancel: false
-        });
-      }
-    });
-  } catch (e) {
-    uni.showToast({ title: '导出失败', icon: 'none' });
-  }
-};
-
-const importData = () => {
-  uni.showModal({
-    title: '导入提示',
-    content: '导入将覆盖现有所有数据，确定继续吗？',
-    success: (res) => {
-      if (res.confirm) {
-        uni.getClipboardData({
-          success: async (clip) => {
-            try {
-              if (!clip.data) throw new Error('剪贴板为空');
-              await db.importData(clip.data);
-              // 刷新所有 Store
-              await exerciseStore.fetchActions();
-              await planStore.fetchActivePlan();
-              updateTodayPlan();
-              profilePopup.value.close();
-              uni.showToast({ title: '导入成功' });
-            } catch (e) {
-              uni.showToast({ title: '导入失败，请检查剪贴板内容', icon: 'none' });
-            }
-          }
-        });
-      }
-    }
-  });
-};
 </script>
 
 <style lang="scss" scoped>
@@ -707,18 +608,13 @@ const importData = () => {
     align-items: center;
   }
 
-  .avatar, .timer-btn {
+  .timer-btn {
     width: 38px;
     height: 38px;
-    background: linear-gradient(135deg, #007aff, #005bb7);
     border-radius: 12px;
     display: flex;
     justify-content: center;
     align-items: center;
-    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.15);
-  }
-
-  .timer-btn {
     background: linear-gradient(135deg, #4cd964, #28a745);
     box-shadow: 0 4px 12px rgba(76, 217, 100, 0.15);
   }

@@ -3,9 +3,16 @@
     <view class="status-bar"></view>
     
     <view class="header-section">
-      <view class="header-left">
-        <text class="page-title">个人中心</text>
-        <text class="page-sub">管理您的摄入与身体数据</text>
+      <view class="header-content">
+        <view class="header-left">
+          <text class="page-title">个人中心</text>
+          <text class="page-sub">管理您的摄入与身体数据</text>
+        </view>
+        <view class="header-right">
+          <view class="avatar" @click="showProfilePopup">
+            <uni-icons type="person-filled" size="24" color="#fff"></uni-icons>
+          </view>
+        </view>
       </view>
     </view>
 
@@ -191,18 +198,73 @@
         </view>
       </view>
     </uni-popup>
+
+    <!-- 个人中心/数据管理弹窗 -->
+    <uni-popup ref="profilePopup" type="bottom">
+      <view class="profile-drawer">
+        <view class="drawer-header">
+          <view class="drag-handle"></view>
+          <view class="user-info">
+            <view class="large-avatar">
+              <uni-icons type="person-filled" size="40" color="#fff"></uni-icons>
+            </view>
+            <view class="info-content">
+              <text class="user-name">健身达人</text>
+              <text class="user-sub">记录进步，成就更好的自己</text>
+            </view>
+          </view>
+        </view>
+        
+        <view class="drawer-body">
+          <view class="menu-section">
+            <text class="section-title">数据管理</text>
+            <view class="menu-grid">
+              <view class="menu-item" @click="exportData">
+                <view class="icon-wrap export">
+                  <uni-icons type="download-filled" size="24" color="#007aff"></uni-icons>
+                </view>
+                <text class="menu-label">导出备份</text>
+                <text class="menu-sub">导出全部数据</text>
+              </view>
+              <view class="menu-item" @click="importData">
+                <view class="icon-wrap import">
+                  <uni-icons type="upload-filled" size="24" color="#ff9500"></uni-icons>
+                </view>
+                <text class="menu-label">导入数据</text>
+                <text class="menu-sub">还原备份记录</text>
+              </view>
+            </view>
+          </view>
+          
+          <view class="app-info">
+            <text>运动计划管理 v{{ version }}</text>
+          </view>
+        </view>
+      </view>
+    </uni-popup>
   </view>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted, computed } from 'vue';
 import { useUserStore } from '@/stores/user.js';
+import { usePlanStore } from '@/stores/plan.js';
+import { useExerciseStore } from '@/stores/exercise.js';
+import { useLogStore } from '@/stores/log.js';
+import { db } from '@/utils/db.js';
+import pkg from '@/package.json';
 
 const userStore = useUserStore();
+const planStore = usePlanStore();
+const exerciseStore = useExerciseStore();
+const logStore = useLogStore();
+
+const version = pkg.version;
 const todayStr = new Date().toISOString().split('T')[0];
 
 const intakePopup = ref(null);
 const bodyPopup = ref(null);
+const profilePopup = ref(null);
 
 const intakeForm = reactive({
   tdee: '',
@@ -335,6 +397,59 @@ const showHistoryPopup = () => {
   });
 };
 
+const showProfilePopup = () => {
+  profilePopup.value.open();
+};
+
+const exportData = async () => {
+  try {
+    const jsonStr = await db.exportData();
+    uni.setClipboardData({
+      data: jsonStr,
+      success: () => {
+        uni.showModal({
+          title: '导出成功',
+          content: '数据已复制到剪贴板，请妥善保存。',
+          showCancel: false
+        });
+      }
+    });
+  } catch (e) {
+    uni.showToast({ title: '导出失败', icon: 'none' });
+  }
+};
+
+const importData = () => {
+  uni.showModal({
+    title: '导入提示',
+    content: '导入将覆盖现有所有数据，确定继续吗？',
+    success: (res) => {
+      if (res.confirm) {
+        uni.getClipboardData({
+          success: async (clip) => {
+            try {
+              if (!clip.data) throw new Error('剪贴板为空');
+              await db.importData(clip.data);
+              // 刷新所有 Store
+              await Promise.all([
+                exerciseStore.fetchActions(),
+                planStore.fetchActivePlan(),
+                logStore.fetchLogs(),
+                userStore.fetchIntake(),
+                userStore.fetchBodyRecords()
+              ]);
+              profilePopup.value.close();
+              uni.showToast({ title: '导入成功' });
+            } catch (e) {
+              uni.showToast({ title: '导入失败，请检查剪贴板内容', icon: 'none' });
+            }
+          }
+        });
+      }
+    }
+  });
+};
+
 const formatDate = (dateStr) => {
   if (!dateStr) return '';
   const d = new Date(dateStr);
@@ -357,6 +472,12 @@ const formatDate = (dateStr) => {
   background: linear-gradient(135deg, #007aff 0%, #0056b3 100%);
   color: #fff;
   
+  .header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
   .page-title {
     font-size: 44rpx;
     font-weight: bold;
@@ -368,6 +489,17 @@ const formatDate = (dateStr) => {
     opacity: 0.8;
     margin-top: 8rpx;
     display: block;
+  }
+
+  .avatar {
+    width: 95rpx;
+    height: 95rpx;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 50rpx;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 2rpx solid rgba(255, 255, 255, 0.3);
   }
 }
 
@@ -582,5 +714,125 @@ const formatDate = (dateStr) => {
 
 .history-body {
   height: 60vh;
+}
+
+.profile-drawer {
+  background-color: #f8f9fb;
+  border-radius: 30px 30px 0 0;
+  min-height: 40vh;
+  padding-bottom: calc(30px + var(--window-bottom));
+  
+  .drawer-header {
+    padding: 10px 24px 30px;
+    background-color: #fff;
+    border-radius: 30px 30px 0 0;
+    position: relative;
+    
+    .drag-handle {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40px;
+      height: 4px;
+      background-color: #eee;
+      border-radius: 2px;
+    }
+    
+    .user-info {
+      margin-top: 25px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      
+      .large-avatar {
+        width: 64px;
+        height: 64px;
+        background: linear-gradient(135deg, #007aff, #005bb7);
+        border-radius: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        box-shadow: 0 4px 12px rgba(0, 122, 255, 0.2);
+      }
+      
+      .user-name {
+        font-size: 20px;
+        font-weight: 800;
+        color: #1a1a1a;
+        display: block;
+      }
+      
+      .user-sub {
+        font-size: 13px;
+        color: #999;
+        margin-top: 4px;
+        display: block;
+      }
+    }
+  }
+  
+  .drawer-body {
+    padding: 24px;
+    
+    .menu-section {
+      .section-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: #999;
+        margin-bottom: 16px;
+        display: block;
+        padding-left: 4px;
+      }
+      
+      .menu-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      
+      .menu-item {
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+        
+        .icon-wrap {
+          width: 48px;
+          height: 48px;
+          border-radius: 14px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          margin-bottom: 12px;
+          
+          &.export { background-color: #eef6ff; }
+          &.import { background-color: #fff7e6; }
+        }
+        
+        .menu-label {
+          font-size: 16px;
+          font-weight: 700;
+          color: #333;
+        }
+        
+        .menu-sub {
+          font-size: 11px;
+          color: #999;
+          margin-top: 4px;
+        }
+      }
+    }
+    
+    .app-info {
+      margin-top: 40px;
+      text-align: center;
+      font-size: 12px;
+      color: #ccc;
+    }
+  }
 }
 </style>

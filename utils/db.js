@@ -61,11 +61,15 @@ export const db = {
             cols.forEach((col, i) => {
               const rawVal = rawVals[i];
               if (rawVal === '?') {
-                newItem[col] = values[paramIndex++];
+                const val = values[paramIndex++];
+                newItem[col] = val;
+                if (col === 'id') h5Storage.lastId = val;
               } else {
                 // 处理硬编码在 SQL 中的数字或字符串
                 const cleanVal = rawVal.replace(/'/g, '');
-                newItem[col] = isNaN(cleanVal) ? cleanVal : Number(cleanVal);
+                const val = isNaN(cleanVal) ? cleanVal : Number(cleanVal);
+                newItem[col] = val;
+                if (col === 'id') h5Storage.lastId = val;
               }
             });
           }
@@ -270,7 +274,7 @@ export const db = {
   },
 
   async exportData() {
-    const tables = ['exercise_actions', 'plan_configs', 'plan_details', 'schedule_adjustments', 'user_intake', 'body_records'];
+    const tables = ['exercise_actions', 'plan_configs', 'plan_details', 'workout_logs', 'schedule_adjustments', 'user_intake', 'body_records'];
     const data = {};
     for (const table of tables) {
       data[table] = await this.select(`SELECT * FROM ${table}`);
@@ -280,12 +284,12 @@ export const db = {
 
   async importData(jsonStr) {
     const data = JSON.parse(jsonStr);
-    const tables = ['exercise_actions', 'plan_configs', 'plan_details', 'schedule_adjustments', 'user_intake', 'body_records'];
+    const tables = ['exercise_actions', 'plan_configs', 'plan_details', 'workout_logs', 'schedule_adjustments', 'user_intake', 'body_records'];
     for (const table of tables) {
       await this.execute(`DELETE FROM ${table}`);
       const rows = data[table] || [];
       for (const row of rows) {
-        const keys = Object.keys(row).filter(k => k !== 'id');
+        const keys = Object.keys(row);
         const values = keys.map(k => row[k]);
         const sql = `INSERT INTO ${table} (${keys.join(',')}) VALUES (${keys.map(() => '?').join(',')})`;
         await this.execute(sql, values);
