@@ -59,7 +59,10 @@ const isInitial = ref(true);
 const presets = [30, 45, 60, 90, 120];
 
 let timer = null;
-let audioContext = null;
+let endSequenceStarted = false;
+
+const endAudio = uni.createInnerAudioContext();
+endAudio.src = '/static/end_join.mp3';
 
 // 监听设置时间的变化，在未开始计时时同步更新剩余时间
 watch(setTime, (newVal) => {
@@ -88,12 +91,18 @@ const startTimer = () => {
   remainingTime.value = setTime.value;
   isRunning.value = true;
   isInitial.value = false;
+  endSequenceStarted = false;
   
   timer = setInterval(() => {
     if (remainingTime.value > 0) {
       remainingTime.value--;
+      
+      // 在剩余3秒时触发 end.mp3
+      if (remainingTime.value === 4) {
+        playEndSequence();
+        endSequenceStarted = true;
+      }
     } else {
-      playAlarm();
       finishTimer();
     }
   }, 1000);
@@ -111,6 +120,7 @@ const resetTimer = () => {
   stopTimer();
   remainingTime.value = setTime.value;
   isInitial.value = true;
+  endSequenceStarted = false;
 };
 
 const toggleTimer = () => {
@@ -126,12 +136,11 @@ const finishTimer = () => {
   
 };
 
-const playAlarm = () => {
-  if (!audioContext) {
-    audioContext = uni.createInnerAudioContext();
-    audioContext.src = '/static/clock.mp3';
-  }
-  audioContext.play();
+const playEndSequence = () => {
+  endAudio.stop();
+  // 某些平台需要 seek(0) 确保从头播放
+  endAudio.seek(0);
+  endAudio.play();
 };
 
 const goBack = () => {
@@ -140,10 +149,8 @@ const goBack = () => {
 
 onUnmounted(() => {
   stopTimer();
-  if (audioContext) {
-    audioContext.destroy();
-    audioContext = null;
-  }
+  // 页面销毁时彻底销毁音频实例，释放系统资源
+  endAudio.destroy();
 });
 </script>
 
