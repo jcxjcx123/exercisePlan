@@ -53,14 +53,14 @@
           <view class="input-grid">
             <view class="input-item">
               <text class="label">重量 (KG)</text>
-              <view class="number-input">
-                <input type="digit" v-model="currentSet.weight" />
+              <view class="number-input" :class="{ disabled: currentSetIndex > 1 }">
+                <input :key="'w-' + currentActionIndex + '-' + currentSetIndex" type="digit" v-model="currentSet.weight" :cursor-spacing="20" :disabled="currentSetIndex > 1" />
               </view>
             </view>
             <view class="input-item">
               <text class="label">次数</text>
               <view class="number-input">
-                <input type="number" v-model="currentSet.reps" />
+                <input :key="'r-' + currentActionIndex + '-' + currentSetIndex" type="number" v-model="currentSet.reps" :cursor-spacing="20" />
               </view>
             </view>
           </view>
@@ -109,7 +109,7 @@
           <uni-icons type="plus" size="16" color="#007aff"></uni-icons>
 
         </button>
-        <button class="sub-btn" @click="skipAction">
+        <button class="sub-btn" @click="skipAction" @touchstart="recordTouch">
           <text>跳过动作</text>
           <uni-icons type="forward" size="16" color="#666"></uni-icons>
 
@@ -124,6 +124,15 @@
     <uni-popup ref="restPopup" type="center" :mask-click="false">
       <view class="rest-popup-card">
         <text class="title">休息中</text>
+        
+        <!-- 下一个动作提醒 -->
+        <view class="next-action-tip" v-if="nextActionInfo">
+          <text class="label">下一组</text>
+          <view class="action-details">
+            <text class="name">{{ nextActionInfo.name }}</text>
+            <text class="set">第 {{ nextActionInfo.setIndex }} 组</text>
+          </view>
+        </view>
         
         <view class="countdown-container">
           <button class="adjust-btn minus" @click="adjustCountdown(-10)">-10s</button>
@@ -266,6 +275,30 @@ const restProgressPercent = computed(() => {
   return (countdown.value / restTime.value) * 100;
 });
 
+// 计算下一个动作/组的信息
+const nextActionInfo = computed(() => {
+  if (!currentAction.value) return null;
+  
+  // 如果当前动作还有下一组
+  if (currentSetIndex.value < currentAction.value.sets.length) {
+    return {
+      name: currentAction.value.name,
+      setIndex: currentSetIndex.value + 1
+    };
+  }
+  
+  // 如果有下一个动作
+  if (currentActionIndex.value < trainingActions.value.length - 1) {
+    const nextAct = trainingActions.value[currentActionIndex.value + 1];
+    return {
+      name: nextAct.name,
+      setIndex: 1
+    };
+  }
+  
+  return null;
+});
+
 onMounted(async () => {
   await initTraining();
   startTimer();
@@ -346,17 +379,30 @@ const stopCountdown = () => {
 };
 
 const adjustCountdown = (val) => {
-  countdown.value = Math.max(0, countdown.value + val);
+  countdown.value = Math.max(0, Number(countdown.value) + val);
 };
 
 const skipRest = () => {
+  if (isSkippingRest) return;
+  isSkippingRest = true;
   stopCountdown();
   restPopup.value.close();
   nextSet();
+  setTimeout(() => { isSkippingRest = false; }, 500);
 };
 
+let isSkippingRest = false;
+
 const finishSet = () => {
-  currentSet.value.completed = true;
+  const currentS = currentSet.value;
+  currentS.completed = true;
+  
+  // 更新下一组的默认重量和次数为当前组的值
+  if (currentSetIndex.value < currentAction.value.sets.length) {
+    const nextS = currentAction.value.sets[currentSetIndex.value];
+    nextS.weight = currentS.weight;
+    nextS.reps = currentS.reps;
+  }
   
   // 检查是否是最后一个动作的最后一组
   const isLastAction = currentActionIndex.value === trainingActions.value.length - 1;
@@ -396,7 +442,21 @@ const addSet = () => {
   });
 };
 
+let lastTouchTime = 0;
+
+const recordTouch = () => {
+  lastTouchTime = Date.now();
+}
+
 const skipAction = () => {
+
+  if (Date.now() - lastTouchTime > 500) {
+    return;
+  }
+  
+  if (isProcessingAction) return;
+  isProcessingAction = true;
+  
   uni.showModal({
     title: '跳过动作',
     content: '确定要跳过当前动作吗？',
@@ -404,9 +464,14 @@ const skipAction = () => {
       if (res.confirm) {
         nextAction();
       }
+    },
+    complete: () => {
+      setTimeout(() => { isProcessingAction = false; }, 500);
     }
   });
 };
+
+let isProcessingAction = false;
 
 const endTraining = () => {
   uni.showModal({
@@ -683,6 +748,13 @@ const closeSummary = () => {
               display: flex;
               align-items: center;
               justify-content: center;
+              transition: all 0.3s;
+
+              &.disabled {
+                background-color: #eee;
+                opacity: 0.6;
+              }
+
               input {
                 font-size: 20px;
                 font-weight: 700;
@@ -846,7 +918,46 @@ const closeSummary = () => {
       font-size: 20px;
       font-weight: 700;
       color: #333;
-      margin-bottom: 30px;
+      margin-bottom: 20px;
+    }
+
+    .next-action-tip {
+      background-color: #f0f7ff;
+      padding: 12px 20px;
+      border-radius: 16px;
+      width: 100%;
+      box-sizing: border-box;
+      margin-bottom: 25px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+
+      .label {
+        font-size: 11px;
+        color: #007aff;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .action-details {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        .name {
+          font-size: 16px;
+          font-weight: 700;
+          color: #333;
+        }
+        .set {
+          font-size: 13px;
+          color: #666;
+          background-color: #fff;
+          padding: 2px 8px;
+          border-radius: 6px;
+        }
+      }
     }
 
     .countdown-container {
