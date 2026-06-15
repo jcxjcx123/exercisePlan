@@ -19,7 +19,7 @@
 - **UI 组件库**: [uni-ui](https://uniapp.dcloud.net.cn/component/uniui/uni-ui.html)
 - **样式**: SCSS
 
-## 📖 功能说明
+## 📖 功能说明.
 
 ### 1. 今日训练 (首页)
 - **任务概览**: 实时展示今日待练部位及动作清单。
